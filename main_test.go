@@ -21,12 +21,17 @@ func TestMainXnotify(t *testing.T) {
 
 	// 只有在对文件注册的监控事件类型为"FAN_ACCESS_PERM|FAN_OPEN_PERM"类型的时候
 	// 需要把对这些事件类型允许,还是拒绝的结果写回到fanotify的文件描述符(即写回内核中)，从而判断进程是否有权限对文件的操作；
-	err = fa.AddMonitorFile("/tmp/dir1", xnotify.FAN_ACCESS_PERM|xnotify.FAN_CLOSE_WRITE|xnotify.FAN_OPEN_PERM|xnotify.FAN_MODIFY)
+	err = fa.AddMonitorFile("/tmp/dir1", xnotify.FAN_ACCESS|xnotify.FAN_CLOSE_WRITE|xnotify.FAN_OPEN|xnotify.FAN_MODIFY)
 	if err != nil {
 		fmt.Println("NewFaNotify add monitor file error:", err)
 	}
 
 	go fa.MonitorFileEvents()
+	go func() {
+		var pInfo xnotify.ProcInfo
+		pInfo = <-fa.EventProcinfo
+		fmt.Printf("Get Fanotify Event info about process info: %+v\n", pInfo)
+	}()
 
 	quit := make(chan os.Signal)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
