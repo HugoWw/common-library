@@ -1,0 +1,6 @@
+.idea/
+.*.swp
+.vscode
+*.code-workspace
+*.bak
+.DS_Store/
