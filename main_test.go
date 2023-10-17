@@ -13,7 +13,8 @@ import (
 
 func TestMainXnotify(t *testing.T) {
 	var end chan bool = make(chan bool)
-	fa, err := xnotify.NewFaNotify(end)
+	pInfoChan := make(chan xnotify.ProcInfo, 2)
+	fa, err := xnotify.NewFaNotify(end, pInfoChan)
 	if err != nil {
 		fmt.Println("NewFaNotify error:", err)
 		os.Exit(1)
@@ -28,9 +29,9 @@ func TestMainXnotify(t *testing.T) {
 
 	go fa.MonitorFileEvents()
 	go func() {
-		var pInfo xnotify.ProcInfo
-		pInfo = <-fa.EventProcinfo
-		fmt.Printf("Get Fanotify Event info about process info: %+v\n", pInfo)
+		for v := range pInfoChan {
+			fmt.Printf("Get Fanotify Event info about process info: %+v\n", v)
+		}
 	}()
 
 	quit := make(chan os.Signal)
@@ -39,9 +40,11 @@ func TestMainXnotify(t *testing.T) {
 	case <-end:
 		fa.RemoveMonitor()
 		fa.Close()
+		close(pInfoChan)
 	case <-quit:
 		fa.RemoveMonitor()
 		fa.Close()
+		close(pInfoChan)
 	}
 
 }

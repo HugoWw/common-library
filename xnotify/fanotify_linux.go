@@ -23,10 +23,10 @@ type FaNotify struct {
 	dirMonitorMap map[string]uint64
 	fa            *NotifyFD
 	endChan       chan bool
-	EventProcinfo chan ProcInfo
+	eventChan     chan ProcInfo
 }
 
-func NewFaNotify(endFaChan chan bool) (*FaNotify, error) {
+func NewFaNotify(endFaChan chan bool, eChen chan ProcInfo) (*FaNotify, error) {
 	fa, err := initialize(faInitFlags, os.O_RDONLY|syscall.O_LARGEFILE)
 	if err != nil {
 		return nil, err
@@ -39,7 +39,7 @@ func NewFaNotify(endFaChan chan bool) (*FaNotify, error) {
 		fa:            fa,
 		dirMonitorMap: make(map[string]uint64),
 		endChan:       endFaChan,
-		EventProcinfo: make(chan ProcInfo),
+		eventChan:     eChen,
 	}
 
 	fant.configPerm = fant.checkConfigPerm()
@@ -163,7 +163,7 @@ func (fn *FaNotify) handleEvents() error {
 
 			fmt.Printf("[FaNotify handleEvents] get event,pid: %v, fmask:%v, fd:%+v\n", pid, fmt.Sprintf("0x%08x", fmask), fd)
 			fmt.Printf("[FaNotify handleEvents] EventMetadata struct:%+v\n", ev)
-			fn.convert2ProcInfo(pid)
+			go fn.convert2ProcInfo(pid)
 			perm := (fmask & (FAN_OPEN_PERM | FAN_ACCESS_PERM)) > 0
 
 			if perm {
@@ -186,5 +186,5 @@ func (fn *FaNotify) convert2ProcInfo(pid int) {
 	pInfo.PPath, _ = GetFilePath(pInfo.PPid)
 	pInfo.Cmds, _ = ReadCmdLine(pid)
 
-	fn.EventProcinfo <- pInfo
+	fn.eventChan <- pInfo
 }
