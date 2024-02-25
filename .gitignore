@@ -3,4 +3,4 @@
 .vscode
 *.code-workspace
 *.bak
-.DS_Store/
+.DS_Store
